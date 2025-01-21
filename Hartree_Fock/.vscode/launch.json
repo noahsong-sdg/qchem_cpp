@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run C++ Program",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "$C:/Users/noahs/qchem/qchem_cpp/project_two/main.exe", // Path to the compiled executable
+        "args": [],                          // Arguments to pass to your program, if any
+        "stopAtEntry": false,
+        "cwd": "C:/Users/noahs/qchem/qchem_cpp/project_two}",         // Current working directory
+        "environment": [],
+        "externalConsole": true,             // Whether to use an external console
+        "MIMode": "gdb",                     // Use "lldb" for macOS if GDB isn't installed
+        "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ]
+      }
+    ]
+  }
+  
