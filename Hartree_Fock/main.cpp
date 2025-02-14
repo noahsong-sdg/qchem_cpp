@@ -35,12 +35,13 @@ int main()
     // TODO: Speedup https://github.com/CrawfordGroup/ProgrammingProjects/blob/master/Project%2303/hints/hint3-2.md
     std::string fileName_d = "data/eri.dat";
     longVector dintegrals = double_integral::readDoubleFromFile(fileName_d); 
-    cleanVector(dintegrals);
-    for(int i = 0; i < dintegrals.size(); i++) {
+    findZeroElements(dintegrals);
+    //cleanVector(dintegrals);
+    /*for(int i = 0; i < dintegrals.size(); i++) {
         if(std::isinf(dintegrals(i)) || std::isnan(dintegrals(i))) {
-            dintegrals(i) = 0.0;
+            dintegrals(i) = 100.0;
             }
-        }
+        }*/
      std::cout << dintegrals << std::endl;
 
 
@@ -89,7 +90,8 @@ int main()
             }
         }
     }
-    //std::cout << "Initial density matrix:\n" << D << std::endl; 
+    // validated
+    // std::cout << "Initial density matrix:\n" << D << std::endl; 
 
 
 
@@ -102,10 +104,8 @@ int main()
     }
     double E_tot = E_elec + enuc; 
     // Result is -124.441 Hartrees - the guide's result was -125.842077437699 Hartrees. Maybe increased floating point precision?
-    std::cout << "E Total\n" << E_tot << std::endl;
+    // std::cout << "E Total\n" << E_tot << std::endl;
     
-
-
     //Step Seven: Compute new Fock Matrix
     longMatrix fock_n = ComputeNewFock::computeFock(H, D, dintegrals);
 /*    longMatrix fock_n = initialize(7);
@@ -125,9 +125,7 @@ int main()
     } */
     cleanMatrix(fock_n);
     std::cout << "NewFock matrix:\n" << fock_n << std::endl;
-
-
-
+    /*
     // Step Eight: orthog F_new
     longMatrix fock_n_prime = S_minus_half.transpose() * fock_n * S_minus_half;
     auto f_prime_ortho = solve_eigen(fock_n_prime);
@@ -142,6 +140,8 @@ int main()
             }
         }
     }
+
+    
     // Step Nine: Compute new electronic and total energies:
     double E_elec_n {0};
     for(int mu = 0; mu < 5; mu++) {
@@ -149,13 +149,8 @@ int main()
                 E_elec_n += D_n(mu, nu) * (H(mu, nu) + fock_n(mu, nu));  
         }
     }
-    double E_tot = E_elec + enuc;
-
     // Step Ten: Test convergence
-    // move these consts to header file
-    const double density_threshold = 1e-12;    // δ1
-    const double energy_threshold = 1e-12;     // δ2
-    const int max_iterations = 50;
+
     bool converged = false;
     int iteration = 0;
     longMatrix D_old = D_n;
@@ -218,7 +213,7 @@ if(converged) {
 } else {
     std::cout << "\nSCF Failed to converge in " << max_iterations << " iterations." << std::endl;
 }
-    // g++ main.cpp hf_fns.cpp -I. -o main
+    // g++ main.cpp hf_fns.cpp -I. -o main */
 
     return 0;
 }

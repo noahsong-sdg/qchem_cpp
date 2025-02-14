@@ -4,6 +4,13 @@
 #include "./Eigen/Dense"
 #include <string>
 
+
+
+// set iteration constants
+const double density_threshold = 1e-12;    // δ1
+const double energy_threshold = 1e-12;     // δ2
+const int max_iterations = 50;
+
 // Define types for convenience
 typedef Eigen::Matrix<long double, Eigen::Dynamic, Eigen::Dynamic> longMatrix;
 typedef Eigen::Matrix<long double, Eigen::Dynamic, 1> longVector;
@@ -13,13 +20,15 @@ template<typename Derived>
 void cleanMatrix(Eigen::MatrixBase<Derived>& matrix) {  // removed default value
     matrix = (matrix.array().abs() < 1e-10).select(0.0, matrix);
 }
-
+// organize
+void findZeroElements(const longVector& dintegrals);
+size_t countLines(const std::string& fileName);
 
 // Function declarations
 void file_error_msg(std::fstream& inputFile);
 longMatrix initialize(int matrixSize);
 std::pair<longMatrix, longVector> solve_eigen(longMatrix m);
-void cleanVector(longVector vector);
+void cleanVector(longVector& vector);
 double calculateRMSDensity(const longMatrix& D_new, const longMatrix& D_old);
 // Class declarations
 class MatrixFromFile {
