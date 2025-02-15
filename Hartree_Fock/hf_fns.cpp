@@ -265,8 +265,9 @@ SCF::SCF(const longMatrix& H_in, const longMatrix& S_minus_half_in,
 
 longMatrix SCF::buildNewDensity(const longMatrix& fock) {
     // Transform Fock matrix
-    longMatrix fock_prime = S_minus_half.transpose() * fock * S_minus_half;
     
+    longMatrix fock_prime = S_minus_half.transpose() * fock * S_minus_half;
+    std::cout << "fockprime success" << std::endl;
     // Solve eigenvalue problem
     auto eigen_solution = hf_utils::solve_eigen(fock_prime);
     longMatrix C = S_minus_half * eigen_solution.first;
@@ -309,10 +310,10 @@ void SCF::runSCF() {
     while(!converged && iteration_count < MAX_ITERATIONS) {
         // Build new Fock matrix
         longMatrix fock = FockBuilder::build(H, D, dintegrals);
-        
         // Build new density matrix
         longMatrix D_new = buildNewDensity(fock);
-        
+        std::cout << "dnew success" << std::endl;
+
         // Calculate new energy
         double E_new = calculateNewEnergy(D_new, fock);
         

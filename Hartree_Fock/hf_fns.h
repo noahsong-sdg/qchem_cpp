@@ -2,6 +2,10 @@
 #define HF_FNS_H
 
 #include "./Eigen/Dense"
+#include "./Eigen/Sparse"
+#include "Config.h"
+#include "Logger.h"
+#include <omp.h>
 #include <string>
 #include <vector>
 #include <array>
@@ -11,6 +15,7 @@
 using longMatrix = Eigen::Matrix<long double, Eigen::Dynamic, Eigen::Dynamic>;
 using longVector = Eigen::Matrix<long double, Eigen::Dynamic, 1>;
 using matrixSolver = Eigen::SelfAdjointEigenSolver<longMatrix>;
+using SparseMatrix = Eigen::SparseMatrix<long double>;
 
 // Constants
 constexpr double DENSITY_THRESHOLD = 1e-12;    // δ1
@@ -28,6 +33,25 @@ namespace hf_utils {
     longMatrix initialize(int matrixSize);
     std::pair<longMatrix, longVector> solve_eigen(longMatrix m);
     double calculateRMSDensity(const longMatrix& D_new, const longMatrix& D_old);
+    
+    // Add memory management
+    void releaseMemory(longVector& vec) {
+        longVector().swap(vec);  // Force deallocation
+    }
+    
+    // Optimize matrix operations
+    longMatrix fastMatrixMultiply(const longMatrix& A, const longMatrix& B) {
+        return A * B;  // Eigen optimizes this internally
+    }
+    
+    // Add parallel processing
+    template<typename Func>
+    void parallel_for(int start, int end, Func f) {
+        #pragma omp parallel for num_threads(HFConfig::NUM_THREADS)
+        for(int i = start; i < end; i++) {
+            f(i);
+        }
+    }
 }
 
 // Core functionality classes
