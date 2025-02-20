@@ -4,7 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <chrono>
-
+#include <iostream>
 class Logger {
 public:
     static void init(const std::string& filename) {

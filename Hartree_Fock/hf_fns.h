@@ -25,8 +25,7 @@ constexpr double CLEAN_THRESHOLD = 1e-10;
 
 // Utility functions
 namespace hf_utils {
-    void cleanMatrix(longMatrix& matrix); // Only declare it here
-    
+    void cleanMatrix(longMatrix& matrix);
     void cleanVector(longVector& vector);
     size_t countLines(const std::string& fileName);
     void file_error_msg(std::fstream& inputFile);
@@ -34,19 +33,14 @@ namespace hf_utils {
     std::pair<longMatrix, longVector> solve_eigen(longMatrix m);
     double calculateRMSDensity(const longMatrix& D_new, const longMatrix& D_old);
     
-    // Add memory management
-    void releaseMemory(longVector& vec) {
-        longVector().swap(vec);  // Force deallocation
-    }
+    // Memory management
+    void releaseMemory(longVector& vec);
     
-    // Optimize matrix operations
-    longMatrix fastMatrixMultiply(const longMatrix& A, const longMatrix& B) {
-        return A * B;  // Eigen optimizes this internally
-    }
+    // Matrix operations
+    longMatrix fastMatrixMultiply(const longMatrix& A, const longMatrix& B);
     
-    // Add parallel processing
     template<typename Func>
-    void parallel_for(int start, int end, Func f) {
+    inline void parallel_for(int start, int end, Func f) {
         #pragma omp parallel for num_threads(HFConfig::NUM_THREADS)
         for(int i = start; i < end; i++) {
             f(i);
@@ -80,37 +74,6 @@ public:
     static longMatrix build(const longMatrix& H, const longMatrix& D, const longVector& doubles);
 private:
     static long double sumDoubles(const longMatrix& D, const longVector& doubles, uint64_t mu, uint64_t nu);
-};
-
-class SCF { 
-public:
-    SCF(const longMatrix& H, const longMatrix& S_minus_half, 
-        const longVector& dintegrals, long double nuclear_repulsion);
-    
-    void runSCF();
-    double getFinalEnergy() const { return E_total; }
-    int getIterationCount() const { return iteration_count; }
-    bool hasConverged() const { return converged; }
-
-private:
-    // Core matrices
-    longMatrix H;
-    longMatrix S_minus_half;
-    longVector dintegrals;
-    longMatrix D;  // Current density matrix
-    
-    // State variables
-    bool converged;
-    int iteration_count;
-    double E_electronic;
-    double E_total;
-    long double nuclear_repulsion;
-    static constexpr int num_occupied = 5;  // Could make this configurable
-
-    // Private methods
-    longMatrix buildNewDensity(const longMatrix& fock);
-    double calculateNewEnergy(const longMatrix& D_new, const longMatrix& fock);
-    void printIterationInfo(int iteration, double rmsd, double delta_E, double E_new);
 };
 
 #endif // HF_FNS_H

@@ -7,7 +7,6 @@
 
 // Utility function implementations
 namespace hf_utils {
-    
     void cleanVector(longVector& vector) {
         vector = (vector.array().abs() < 1e-8).select(0.0, vector);
         // Clean inf and nan values
@@ -63,6 +62,14 @@ namespace hf_utils {
         }
         
         return std::sqrt(sum);
+    }
+    
+    void releaseMemory(longVector& vec) {
+        longVector().swap(vec);  // Force deallocation
+    }
+    
+    longMatrix fastMatrixMultiply(const longMatrix& A, const longMatrix& B) {
+        return A * B;  // Eigen optimizes this internally
     }
     
     // ...other utility function implementations...
@@ -233,114 +240,28 @@ longVector DoubleIntegral::readDoubleFromFile(const std::string& fileName) {
 long double FockBuilder::sumDoubles(const longMatrix& D, const longVector& doubles, uint64_t mu, uint64_t nu) {
     long double value {0};
     const int size = D.rows();
-    for(uint64_t lmda = 0; lmda < size; lmda++) {
+    
+    hf_utils::parallel_for(0, size, [&](int lmda) {
         for(uint64_t sig = 0; sig < size; sig++) {
             value += D(lmda, sig) * 
                 (2.0*doubles(DoubleIntegral::compoundIndex(mu, nu, lmda, sig))
                 - doubles(DoubleIntegral::compoundIndex(mu, lmda, nu, sig)));
         }
-    }
+    });
+    
     return value;
 }
 
 longMatrix FockBuilder::build(const longMatrix& H, const longMatrix& D, const longVector& doubles) {
     longMatrix fock = hf_utils::initialize(H.rows());
-    for(uint64_t mu = 0; mu < H.rows(); mu++) {
+    
+    hf_utils::parallel_for(0, H.rows(), [&](int mu) {
         for(uint64_t nu = 0; nu < H.rows(); nu++) {
             fock(mu, nu) = H(mu, nu) + sumDoubles(D, doubles, mu, nu);
         }
-    }
+    });
+    
     return fock;
 }
 
-SCF::SCF(const longMatrix& H_in, const longMatrix& S_minus_half_in, 
-         const longVector& dintegrals_in, long double nuclear_repulsion_in)
-    : H(H_in), S_minus_half(S_minus_half_in), dintegrals(dintegrals_in),
-      nuclear_repulsion(nuclear_repulsion_in), converged(false), 
-      iteration_count(0), E_electronic(0), E_total(0) {
-    
-    // Initialize density matrix
-    D = longMatrix::Zero(H.rows(), H.rows());
-}
 
-longMatrix SCF::buildNewDensity(const longMatrix& fock) {
-    // Transform Fock matrix
-    
-    longMatrix fock_prime = S_minus_half.transpose() * fock * S_minus_half;
-    std::cout << "fockprime success" << std::endl;
-    // Solve eigenvalue problem
-    auto eigen_solution = hf_utils::solve_eigen(fock_prime);
-    longMatrix C = S_minus_half * eigen_solution.first;
-    
-    // Build new density matrix
-    longMatrix D_new = longMatrix::Zero(H.rows(), H.rows());
-    for(int mu = 0; mu < H.rows(); mu++) {
-        for(int nu = 0; nu < H.rows(); nu++) {
-            for(int m = 0; m < num_occupied; m++) {
-                D_new(mu, nu) += C(mu, m) * C(nu, m);
-            }
-        }
-    }
-    
-    return D_new;
-}
-
-double SCF::calculateNewEnergy(const longMatrix& D_new, const longMatrix& fock) {
-    double E_new = 0.0;
-    for(int mu = 0; mu < H.rows(); mu++) {
-        for(int nu = 0; nu < H.rows(); nu++) {
-            E_new += D_new(mu, nu) * (H(mu, nu) + fock(mu, nu));
-        }
-    }
-    return E_new;
-}
-
-void SCF::printIterationInfo(int iteration, double rmsd, double delta_E, double E_new) {
-    std::cout << "Iteration " << iteration << ":" << std::endl
-              << "  RMSD: " << rmsd << std::endl
-              << "  ΔE: " << delta_E << std::endl
-              << "  E_elec: " << E_new << std::endl
-              << "  E_total: " << E_new + nuclear_repulsion << std::endl;
-}
-
-void SCF::runSCF() {
-    double E_old = 0.0;
-    iteration_count = 0;
-    
-    while(!converged && iteration_count < MAX_ITERATIONS) {
-        // Build new Fock matrix
-        longMatrix fock = FockBuilder::build(H, D, dintegrals);
-        // Build new density matrix
-        longMatrix D_new = buildNewDensity(fock);
-        std::cout << "dnew success" << std::endl;
-
-        // Calculate new energy
-        double E_new = calculateNewEnergy(D_new, fock);
-        
-        // Check convergence
-        double rmsd = hf_utils::calculateRMSDensity(D_new, D);
-        double delta_E = std::abs(E_new - E_old);
-        
-        printIterationInfo(iteration_count, rmsd, delta_E, E_new);
-        
-        // Check convergence criteria
-        if(rmsd < DENSITY_THRESHOLD && delta_E < ENERGY_THRESHOLD) {
-            converged = true;
-            E_electronic = E_new;
-            E_total = E_new + nuclear_repulsion;
-        }
-        
-        // Update for next iteration
-        D = D_new;
-        E_old = E_new;
-        iteration_count++;
-    }
-    
-    if(converged) {
-        std::cout << "\nSCF Converged in " << iteration_count << " iterations!" << std::endl
-                  << "Final Electronic Energy: " << E_electronic << std::endl
-                  << "Final Total Energy: " << E_total << std::endl;
-    } else {
-        std::cout << "\nSCF Failed to converge in " << MAX_ITERATIONS << " iterations." << std::endl;
-    }
-}

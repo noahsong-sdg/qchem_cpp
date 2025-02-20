@@ -1,6 +1,6 @@
 #include "hartree_fock.h"
 #include <iostream>
-
+// build cmd: g++ -o app app.cpp Hartree_Fock.cpp hf_fns.cpp Logger.cpp post_hf.cpp -I. -std=c++17 -O3
 int main(int argc, char* argv[]) {
     try {
         if (argc != 2) {
